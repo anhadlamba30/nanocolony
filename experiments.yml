@@ -1,0 +1,73 @@
+# Nanocolony Experiment Definitions
+# Edit this file to add, remove, or modify experiments.
+# Each experiment has a name, params (config overrides), and optional settings.
+# Valid params are any uppercase constant from config.py.
+
+defaults:
+  max_steps: 500
+  early_stop_pop: 5
+
+experiments:
+  balanced:
+    description: "Default balanced environment"
+    params:
+      RESOURCE_SPAWN_RATE: 0.004
+      ENERGY_REPRO_THRESHOLD: 1.5
+      ENERGY_COST_EXIST: 0.002
+
+  abundance:
+    description: "Plentiful resources, easy reproduction"
+    params:
+      RESOURCE_SPAWN_RATE: 0.008
+      ENERGY_REPRO_THRESHOLD: 1.3
+      ENERGY_COST_EXIST: 0.001
+
+  scarcity:
+    description: "Harsh environment with limited resources"
+    params:
+      RESOURCE_SPAWN_RATE: 0.002
+      ENERGY_REPRO_THRESHOLD: 1.6
+      ENERGY_COST_EXIST: 0.004
+
+  fast_repro:
+    description: "Low reproduction threshold, normal resources"
+    params:
+      RESOURCE_SPAWN_RATE: 0.004
+      ENERGY_REPRO_THRESHOLD: 1.2
+      ENERGY_COST_EXIST: 0.002
+
+  slow_signals:
+    description: "Signals persist longer, cheap to emit"
+    params:
+      RESOURCE_SPAWN_RATE: 0.004
+      SIGNAL_DECAY: 0.99
+      ENERGY_COST_SIGNAL: 0.01
+
+  fast_signals:
+    description: "Signals decay quickly, expensive to emit"
+    params:
+      RESOURCE_SPAWN_RATE: 0.004
+      SIGNAL_DECAY: 0.90
+      ENERGY_COST_SIGNAL: 0.10
+
+  evolution_pressure:
+    description: "Moderate scarcity to drive trait evolution"
+    params:
+      RESOURCE_SPAWN_RATE: 0.003
+      ENERGY_REPRO_THRESHOLD: 1.5
+      ENERGY_COST_EXIST: 0.003
+      ENERGY_COST_MOVE: 0.02
+
+  high_mutation:
+    description: "Higher mutation rate for faster evolution"
+    params:
+      RESOURCE_SPAWN_RATE: 0.004
+      MUTATION_RATE: 0.2
+      MUTATION_STRENGTH: 0.2
+
+  sustained:
+    description: "Moderate-high resources with normal repro threshold"
+    params:
+      RESOURCE_SPAWN_RATE: 0.006
+      ENERGY_REPRO_THRESHOLD: 1.4
+      ENERGY_COST_EXIST: 0.002
