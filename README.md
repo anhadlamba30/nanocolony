@@ -7,7 +7,7 @@ An artificial life sandbox where thousands of autonomous agents compete for reso
 <div align="center">
   <img src="assets/simulation.gif" alt="Simulation GIF">
   <br>
-  <em>Three experiments running side-by-side</em>
+  <em>Three experiments running side-by-side: abundance (explosive growth to 10K), sustained (steady growth to ~4K), and fast reproduction (boom/bust to ~100)</em>
 </div>
 
 ![Experiment results](assets/experiment_plots.png)
