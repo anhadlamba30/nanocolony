@@ -1,5 +1,6 @@
 # Python
 __pycache__/
+README.html
 *.pyc
 *.pyo
 *.egg-info/

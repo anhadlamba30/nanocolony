@@ -4,11 +4,11 @@ An artificial life sandbox where thousands of autonomous agents compete for reso
 
 ## Visuals
 
-![Simulation screenshot](assets/simulation.png)
-*Agents (bright dots) exploring the world, consuming resources (green), and leaving pheromone trails (blue = food, red = distress)*
+<video src="assets/simulation.mp4" controls width="100%" loop></video>
+*Three experiments running side-by-side: abundance (explosive growth), sustained (steady growth), and fast reproduction (boom/bust)*
 
 ![Experiment results](assets/experiment_plots.png)
-*Three distinct dynamics: abundance (hits 10K cap), sustained (steady to 1,385), and fast repro (boom/bust to 173)*
+*Population, energy, signals, and births/deaths across the three environments*
 
 ## Quick Start
 
