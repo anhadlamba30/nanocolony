@@ -31,6 +31,7 @@ EXPERIMENTS = [
 
 STEPS = 1000
 INTERVAL = 20
+GIF_WIDTH = 640
 
 
 def apply_params(params):
@@ -145,8 +146,24 @@ if __name__ == '__main__':
         '-crf', '28', '-movflags', '+faststart',
         mp4_path
     ], capture_output=True)
+    size_kb = os.path.getsize(mp4_path) // 1024
+    print(f'MP4: {mp4_path} ({size_kb} KB)', flush=True)
+
+    gif_step = 2
+    gif_frames = []
+    for frame in frames[::gif_step]:
+        w = frame.width
+        h = frame.height
+        f = frame.resize((GIF_WIDTH, int(h * GIF_WIDTH / w)), Image.LANCZOS).convert('RGB')
+        f = f.quantize(colors=256, method=Image.Quantize.MEDIANCUT,
+                       dither=Image.Dither.FLOYDSTEINBERG)
+        gif_frames.append(f)
+    gif_path = 'assets/simulation.gif'
+    gif_frames[0].save(gif_path, save_all=True, append_images=gif_frames[1:],
+                       duration=200, loop=0, optimize=True)
+    gif_size_kb = os.path.getsize(gif_path) // 1024
+    print(f'GIF: {gif_path} ({gif_size_kb} KB, {len(gif_frames)} frames, {gif_frames[0].size})', flush=True)
+
     for f_name in os.listdir(tmpdir):
         os.remove(f'{tmpdir}/{f_name}')
     os.rmdir(tmpdir)
-    size_kb = os.path.getsize(mp4_path) // 1024
-    print(f'MP4: {mp4_path} ({size_kb} KB)', flush=True)
