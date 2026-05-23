@@ -4,8 +4,8 @@ An artificial life sandbox where thousands of autonomous agents compete for reso
 
 ## Visuals
 
-<video src="assets/simulation.mp4" controls width="100%" loop></video>
-*Three experiments running side-by-side: abundance (explosive growth), sustained (steady growth), and fast reproduction (boom/bust)*
+[![Simulation preview](assets/poster.png)](assets/simulation.mp4)
+*Three experiments running side-by-side: abundance (explosive growth), sustained (steady growth), and fast reproduction (boom/bust). Click the image to view the animation.*
 
 ![Experiment results](assets/experiment_plots.png)
 *Population, energy, signals, and births/deaths across the three environments*
