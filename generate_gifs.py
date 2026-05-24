@@ -13,19 +13,13 @@ plt.style.use('dark_background')
 
 EXPERIMENTS = [
     ('Abundance', {
-        'RESOURCE_SPAWN_RATE': 0.008,
-        'ENERGY_REPRO_THRESHOLD': 1.3,
+        'RESOURCE_SPAWN_RATE': 0.014,
         'ENERGY_COST_EXIST': 0.001,
+        'ENERGY_COST_MOVE': 0.01,
     }),
-    ('Sustained', {
-        'RESOURCE_SPAWN_RATE': 0.006,
-        'ENERGY_REPRO_THRESHOLD': 1.4,
-        'ENERGY_COST_EXIST': 0.002,
-    }),
+    ('Balanced', {}),
     ('Fast Repro', {
-        'RESOURCE_SPAWN_RATE': 0.004,
-        'ENERGY_REPRO_THRESHOLD': 1.2,
-        'ENERGY_COST_EXIST': 0.002,
+        'ENERGY_REPRO_THRESHOLD': 1.5,
     }),
 ]
 
@@ -40,9 +34,7 @@ def apply_params(params):
 
 
 def save_config():
-    return {k: getattr(config, k) for k in
-            ['RESOURCE_SPAWN_RATE', 'ENERGY_REPRO_THRESHOLD', 'ENERGY_COST_EXIST',
-             'ENERGY_COST_MOVE', 'ENERGY_COST_SIGNAL']}
+    return {k: getattr(config, k) for k in dir(config) if k.isupper()}
 
 
 def render_composite(sims, names, step):
