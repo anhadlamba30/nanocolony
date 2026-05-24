@@ -12,9 +12,10 @@ class Environment:
         self._spawn_initial_resources()
 
     def _spawn_initial_resources(self):
-        x = np.random.randint(0, self.width, size=1000)
-        y = np.random.randint(0, self.height, size=1000)
-        self.resources[y, x] = np.random.uniform(0.3, 0.5, size=1000)
+        n = int(self.width * self.height * 0.02)
+        x = np.random.randint(0, self.width, size=n)
+        y = np.random.randint(0, self.height, size=n)
+        self.resources[y, x] = np.random.uniform(0.3, config.RESOURCE_MAX, size=n)
 
     def update(self):
         self.resources *= config.RESOURCE_DECAY
@@ -68,6 +69,15 @@ class Environment:
         y = np.clip(positions[:, 1].astype(int), 0, self.height - 1)
         x = np.clip(positions[:, 0].astype(int), 0, self.width - 1)
         return self.resources[y, x]
+
+    def consume_resources(self, positions, fraction=0.5):
+        y = np.clip(positions[:, 1].astype(int), 0, self.height - 1)
+        x = np.clip(positions[:, 0].astype(int), 0, self.width - 1)
+        vals = self.resources[y, x].copy()
+        consumed = vals * fraction
+        self.resources[y, x] -= consumed
+        self.resources[y, x] = np.clip(self.resources[y, x], 0, config.RESOURCE_MAX)
+        return consumed
 
     def sample_signals(self, positions):
         y = np.clip(positions[:, 1].astype(int), 0, self.height - 1)

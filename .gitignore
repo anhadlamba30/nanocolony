@@ -24,3 +24,6 @@ README_files/
 .env
 venv/
 .venv/
+
+# Custom experiments (user-generated)
+my_experiments/

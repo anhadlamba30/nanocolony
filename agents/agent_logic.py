@@ -70,10 +70,9 @@ class AgentLogic:
         if n == 0:
             return np.zeros(0, dtype=np.int32)
 
-        speeds = agent_state.trait_speed[alive_indices]
-        sensing = agent_state.trait_sensing_radius[alive_indices]
         efficiency = agent_state.trait_energy_efficiency[alive_indices]
         signal_b_threshold = agent_state.trait_signal_b_threshold[alive_indices]
+        signal_a_strength = agent_state.trait_signal_a_strength[alive_indices]
 
         energy = inputs[:, 10]
 
@@ -81,56 +80,36 @@ class AgentLogic:
         sig_a_f, sig_a_l, sig_a_r = inputs[:, 1], inputs[:, 4], inputs[:, 7]
         sig_b_f, sig_b_l, sig_b_r = inputs[:, 2], inputs[:, 5], inputs[:, 8]
 
-        max_res = np.maximum(np.maximum(res_f, res_l), res_r)
-        has_resource = max_res > 0.05
+        max_sig_b = np.maximum(np.maximum(sig_b_f, sig_b_l), sig_b_r)
+        in_danger = max_sig_b > signal_b_threshold
 
         max_sig_a = np.maximum(np.maximum(sig_a_f, sig_a_l), sig_a_r)
-        max_sig_b = np.maximum(np.maximum(sig_b_f, sig_b_l), sig_b_r)
-
-        following_a = max_sig_a > 0.05
-        avoiding_b = max_sig_b > signal_b_threshold
 
         effective_energy = energy * efficiency
         can_repro = effective_energy >= config.ENERGY_REPRO_THRESHOLD
+        hungry = effective_energy < (config.ENERGY_HUNGRY_THRESHOLD * signal_a_strength)
 
         rand = np.random.random(n)
-        rand2 = np.random.random(n)
+        actions = np.full(n, config.ACTION_MOVE, dtype=np.int32)
 
-        actions = np.select([
-            can_repro & (rand < 0.3),
-            has_resource & (rand < 0.7),
-            has_resource & (rand >= 0.7) & (rand < 0.85),
-            has_resource & (rand >= 0.85) & (rand2 < 0.5),
-            has_resource & (rand >= 0.85),
-            avoiding_b & (rand < 0.4),
-            avoiding_b & (rand >= 0.4) & (rand2 < 0.5),
-            avoiding_b & (rand >= 0.4),
-            following_a & ~has_resource & (rand < 0.7),
-            following_a & ~has_resource & (rand >= 0.7) & (rand < 0.8),
-            ~has_resource & ~following_a & ~avoiding_b & (rand < 0.5),
-            ~has_resource & ~following_a & ~avoiding_b & (rand >= 0.5) & (rand < 0.6),
-            ~has_resource & ~following_a & ~avoiding_b & (rand >= 0.6) & (rand < 0.7),
-            ~has_resource & ~following_a & ~avoiding_b & (rand >= 0.7) & (rand < 0.8),
-            ~has_resource & ~following_a & ~avoiding_b & (rand >= 0.8) & (rand2 < 0.5),
-            ~has_resource & ~following_a & ~avoiding_b & (rand >= 0.8),
-        ], [
-            config.ACTION_REPRODUCE,
-            config.ACTION_MOVE,
-            config.ACTION_EAT,
-            config.ACTION_TURN_LEFT,
-            config.ACTION_TURN_RIGHT,
-            config.ACTION_TURN_LEFT,
-            config.ACTION_TURN_RIGHT,
-            config.ACTION_EMIT_B,
-            config.ACTION_MOVE,
-            config.ACTION_EMIT_A,
-            config.ACTION_MOVE,
-            config.ACTION_EMIT_A,
-            config.ACTION_EMIT_B,
-            config.ACTION_TURN_LEFT,
-            config.ACTION_TURN_RIGHT,
-            config.ACTION_EMIT_A,
-        ], default=config.ACTION_MOVE)
+        repro = can_repro & (rand < 0.3)
+        actions[repro] = config.ACTION_REPRODUCE
+
+        others = ~repro
+        danger = others & in_danger
+        actions[danger & (sig_b_l > sig_b_r)] = config.ACTION_TURN_RIGHT
+        actions[danger & (sig_b_r >= sig_b_l)] = config.ACTION_TURN_LEFT
+
+        forage = others & ~in_danger & hungry & (max_sig_a > 0.02)
+        if np.any(forage):
+            turn_left = forage & (sig_a_l > sig_a_r) & (sig_a_l > sig_a_f)
+            turn_right = forage & (sig_a_r > sig_a_l) & (sig_a_r > sig_a_f)
+            actions[turn_left] = config.ACTION_TURN_LEFT
+            actions[turn_right] = config.ACTION_TURN_RIGHT
+
+        wander = others & ~in_danger & (~hungry | (max_sig_a <= 0.02))
+        actions[wander & (rand < 0.15)] = config.ACTION_TURN_LEFT
+        actions[wander & (rand >= 0.15) & (rand < 0.3)] = config.ACTION_TURN_RIGHT
 
         return actions
 
@@ -139,10 +118,25 @@ class AgentLogic:
             return np.array([])
 
         positions = agent_state.positions[alive_indices]
+        ry = np.clip(positions[:, 1].astype(int), 0, config.WORLD_HEIGHT - 1)
+        rx = np.clip(positions[:, 0].astype(int), 0, config.WORLD_WIDTH - 1)
 
-        resources = self.env.sample_resources(positions)
-        consumed = resources * 0.5
-        agent_state.consume_resources(consumed, alive_indices)
+        consumed = self.env.consume_resources(positions, fraction=0.5)
+        agent_state.consume_resources(consumed, agent_state.trait_energy_efficiency[alive_indices], alive_indices)
+
+        ate_well = consumed > 0.05
+        if np.any(ate_well):
+            strengths = agent_state.trait_signal_a_strength[alive_indices][ate_well] * 0.3
+            self.env.emit_signals_batch(ry[ate_well], rx[ate_well], 'a', strengths)
+
+        remaining = self.env.resources[ry, rx]
+        depleted = (consumed > 0) & (remaining <= 0.01)
+        if np.any(depleted):
+            self.env.emit_signals_batch(ry[depleted], rx[depleted], 'b', np.full(np.sum(depleted), config.SIGNAL_B_DEPLETION_EMIT))
+
+        sig_b_at_pos = self.env.signal_b[ry, rx]
+        agent_state.energy[alive_indices] -= sig_b_at_pos * config.SIGNAL_B_METABOLIC_COST
+        np.clip(agent_state.energy[alive_indices], 0, config.ENERGY_MAX, out=agent_state.energy[alive_indices])
 
         signal_a_strengths = agent_state.trait_signal_a_strength[alive_indices]
 
@@ -160,7 +154,7 @@ class AgentLogic:
             emit_a_positions = positions[emit_a_mask]
             emit_a_y = np.clip(emit_a_positions[:, 1].astype(int), 0, config.WORLD_HEIGHT - 1)
             emit_a_x = np.clip(emit_a_positions[:, 0].astype(int), 0, config.WORLD_WIDTH - 1)
-            strengths = signal_a_strengths[emit_a_mask] * 0.5
+            strengths = signal_a_strengths[emit_a_mask] * 0.3
             self.env.emit_signals_batch(emit_a_y, emit_a_x, 'a', strengths)
 
         if np.any(emit_b_mask):

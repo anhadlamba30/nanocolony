@@ -28,7 +28,7 @@ class AgentState:
         self.trait_mutation_rate = np.full(self.max_capacity, config.MUTATION_RATE, dtype=np.float64)
         self.trait_energy_efficiency = np.ones(self.max_capacity, dtype=np.float64)
         self.trait_signal_a_strength = np.ones(self.max_capacity, dtype=np.float64)
-        self.trait_signal_b_threshold = np.full(self.max_capacity, 0.5, dtype=np.float64)
+        self.trait_signal_b_threshold = np.full(self.max_capacity, config.INITIAL_SIGNAL_B_THRESHOLD, dtype=np.float64)
 
         self._alive_cache = np.arange(num_agents)
         self._cache_valid = False
@@ -65,9 +65,11 @@ class AgentState:
 
     def remove_dead(self):
         mask = self.alive[:self.num_agents] & (self.energy[:self.num_agents] <= 0)
+        dead_positions = self.positions[:self.num_agents][mask].copy() if np.any(mask) else np.empty((0, 2))
         self.alive[:self.num_agents][mask] = False
         if np.any(mask):
             self._invalidate_cache()
+        return dead_positions
 
     def get_alive_indices(self):
         if self._cache_valid:
@@ -105,8 +107,9 @@ class AgentState:
         energy_cost_exist = config.ENERGY_COST_EXIST / efficiency
         self.energy[alive_indices] -= energy_cost_exist
 
-    def consume_resources(self, consumed, indices):
-        self.energy[indices] = np.clip(self.energy[indices] + consumed * config.ENERGY_GAIN_RESOURCE, 0, config.ENERGY_MAX)
+    def consume_resources(self, consumed, efficiencies, indices):
+        gain = consumed * config.ENERGY_GAIN_RESOURCE * efficiencies
+        self.energy[indices] = np.clip(self.energy[indices] + gain, 0, config.ENERGY_MAX)
 
     def eat(self, eat_mask):
         self.energy[eat_mask] -= config.ENERGY_COST_EXIST
@@ -202,5 +205,5 @@ class AgentState:
         self.trait_mutation_rate = np.hstack([self.trait_mutation_rate, np.full(new_capacity - self.max_capacity, config.MUTATION_RATE)])
         self.trait_energy_efficiency = np.hstack([self.trait_energy_efficiency, np.ones(new_capacity - self.max_capacity)])
         self.trait_signal_a_strength = np.hstack([self.trait_signal_a_strength, np.ones(new_capacity - self.max_capacity)])
-        self.trait_signal_b_threshold = np.hstack([self.trait_signal_b_threshold, np.full(new_capacity - self.max_capacity, 0.5)])
+        self.trait_signal_b_threshold = np.hstack([self.trait_signal_b_threshold, np.full(new_capacity - self.max_capacity, config.INITIAL_SIGNAL_B_THRESHOLD)])
         self.max_capacity = new_capacity

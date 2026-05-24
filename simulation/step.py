@@ -49,7 +49,11 @@ class Simulation:
         prev_alive = int(np.sum(self.agent_state.alive[:self.agent_state.num_agents]))
         self.agent_state.age_step()
 
-        self.agent_state.remove_dead()
+        dead_positions = self.agent_state.remove_dead()
+        if len(dead_positions) > 0:
+            dead_y = np.clip(dead_positions[:, 1].astype(int), 0, config.WORLD_HEIGHT - 1)
+            dead_x = np.clip(dead_positions[:, 0].astype(int), 0, config.WORLD_WIDTH - 1)
+            self.env.emit_signals_batch(dead_y, dead_x, 'b', np.full(len(dead_positions), 0.5))
 
         if self.step_count % 200 == 0:
             self.agent_state.compact()
